@@ -1,0 +1,35 @@
+flowchart LR
+    subgraph INPUT["Input"]
+        U["Human: owner enters pet tasks and time constraints"]
+        H["Human: preference and available time"]
+    end
+
+    subgraph PROCESS["AI Schedule Coach"]
+        R["Retriever\nReads incomplete tasks, due dates, priorities,\ndurations, conflicts, and owner preferences"]
+        P["Planner\nGenerates an AI schedule proposal and reasoning"]
+        V{"Validator\nChecks task IDs, completion status,\ntime budget, and schedule conflicts"}
+        F["Fallback Planner\nUses deterministic priority sorting"]
+    end
+
+    subgraph OUTPUT["Output"]
+        D["Display\nShows the approved plan, reasoning,\nand conflict warnings"]
+        O["Human-readable schedule and explanations"]
+    end
+
+    T["Automated Tests\nMock AI responses and test malformed,\nover-budget, stale, and provider-error cases"]
+    HR["Human Review\nOwner confirms the plan; no AI writes\nare allowed to task or pet records"]
+
+    U --> R
+    H --> R
+    R --> P
+    P --> V
+    V -->|"Valid proposal"| D
+    V -->|"Invalid, unsafe, or unavailable response"| F
+    F --> D
+    D --> O
+    O --> HR
+    HR -->|"Approve or revise constraints"| H
+
+    T -.->|"Checks AI result integrity"| V
+    T -.->|"Checks displayed fallback"| D
+    HR -.->|"Manual review findings"| T
