@@ -3,6 +3,7 @@ from datetime import date, time, timedelta
 import streamlit as st
 
 from pawpal_system import Owner, Pet, Schedule, Task
+from AIScheduleCoach.ai_schedule_coach import AIScheduleCoach
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 
@@ -231,3 +232,43 @@ if schedule is not None:
             )
         else:
             st.info(f"No incomplete tasks due {label.lower()}.")
+
+st.divider()
+st.subheader("AI Schedule Coach")
+available_minutes = st.number_input(
+    "Time available (minutes)",
+    min_value=1,
+    max_value=480,
+    value=45,
+)
+if st.button("Generate AI plan", disabled=not tasks_to_schedule):
+    coach = AIScheduleCoach()
+    proposal, selected_tasks, issue = coach.create_plan(
+        owner,
+        int(available_minutes),
+    )
+    st.session_state.ai_plan = proposal
+    st.session_state.ai_selected_tasks = selected_tasks
+    st.session_state.ai_plan_issue = issue
+
+ai_plan = st.session_state.get("ai_plan")
+if ai_plan is not None:
+    if st.session_state.get("ai_plan_issue"):
+        st.warning(st.session_state.ai_plan_issue)
+    st.write(f"**{ai_plan.source} proposal**")
+    st.write(ai_plan.reasoning)
+    selected_tasks = st.session_state.get("ai_selected_tasks", [])
+    if selected_tasks:
+        st.table(
+            [
+                {
+                    "Pet": task.pet.pet_name if task.pet is not None else "Unassigned",
+                    "Task": task.description,
+                    "Duration (minutes)": task.time_to_complete,
+                    "Priority": task.priority,
+                }
+                for task in selected_tasks
+            ]
+        )
+    else:
+        st.info("No tasks fit the available time.")

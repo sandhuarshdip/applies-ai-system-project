@@ -2,6 +2,7 @@ from datetime import date, time, timedelta
 
 import pytest
 
+from AIScheduleCoach.ai_schedule_coach import AIScheduleCoach, ScheduleProposal
 from pawpal_system import Owner, Pet, Schedule, Task
 
 
@@ -272,3 +273,82 @@ def test_schedule_does_not_return_completed_tasks() -> None:
     schedule.create_schedule(owner, today=today)
 
     assert schedule.tasks_by_date[today] == [incomplete_task]
+
+
+class MockPlanner:
+    def __init__(self, proposal: ScheduleProposal) -> None:
+        self.proposal = proposal
+
+    def plan(self, context):
+        return self.proposal
+
+
+class FailingPlanner:
+    def plan(self, context):
+        raise RuntimeError("provider unavailable")
+
+
+def test_ai_coach_accepts_valid_proposal() -> None:
+    owner = Owner("Jordan", "Morning care")
+    pet = Pet("Mochi", "Shiba Inu")
+    walk = Task("Morning walk", 30, "high")
+    pet.add_task(walk)
+    owner.add_pet(pet)
+
+    coach = AIScheduleCoach(
+        MockPlanner(ScheduleProposal(["task-0"], "The walk fits your budget.", "AI"))
+    )
+    proposal, selected, issue = coach.create_plan(owner, 45)
+
+    assert proposal.source == "AI"
+    assert issue is None
+    assert selected == [walk]
+
+
+def test_ai_coach_rejects_unknown_task_and_uses_fallback() -> None:
+    owner = Owner("Jordan", "Morning care")
+    pet = Pet("Mochi", "Shiba Inu")
+    pet.add_task(Task("Morning walk", 30, "high"))
+    owner.add_pet(pet)
+
+    coach = AIScheduleCoach(
+        MockPlanner(ScheduleProposal(["missing"], "Invented task", "AI"))
+    )
+    proposal, selected, issue = coach.create_plan(owner, 45)
+
+    assert proposal.source == "Fallback"
+    assert selected[0].description == "Morning walk"
+    assert issue is not None
+    assert "unknown task ID" in issue
+
+
+def test_ai_coach_rejects_over_budget_proposal_and_uses_fallback() -> None:
+    owner = Owner("Jordan", "Morning care")
+    pet = Pet("Mochi", "Shiba Inu")
+    pet.add_task(Task("Grooming", 20, "low"))
+    owner.add_pet(pet)
+
+    coach = AIScheduleCoach(
+        MockPlanner(ScheduleProposal(["task-0"], "Too much time", "AI"))
+    )
+    proposal, selected, issue = coach.create_plan(owner, 10)
+
+    assert proposal.source == "Fallback"
+    assert selected == []
+    assert issue is not None
+    assert "fallback" in issue.lower()
+
+
+def test_ai_coach_handles_provider_error_with_fallback() -> None:
+    owner = Owner("Jordan", "Morning care")
+    pet = Pet("Mochi", "Shiba Inu")
+    task = Task("Medication", 5, "high")
+    pet.add_task(task)
+    owner.add_pet(pet)
+
+    proposal, selected, issue = AIScheduleCoach(FailingPlanner()).create_plan(owner, 20)
+
+    assert proposal.source == "Fallback"
+    assert selected == [task]
+    assert issue is not None
+    assert "provider unavailable" in issue

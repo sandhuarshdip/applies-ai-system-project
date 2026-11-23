@@ -83,6 +83,27 @@ PS C:\Users\Sandh\Documents\GitHub\ai110-module2show-pawpal-starter>
 ```
 "Confidence Level: 5 Stars"
 
+## AI Schedule Coach
+
+PawPal+ includes an agentic AI schedule-coach workflow in
+[`AIScheduleCoach/ai_schedule_coach.py`](AIScheduleCoach/ai_schedule_coach.py). The coach:
+
+1. Retrieves incomplete tasks due today or tomorrow and the owner's available time.
+2. Sends a constrained task list to an OpenAI-compatible planner.
+3. Validates task IDs, completion status, duplicate conflicts, and the time budget.
+4. Displays an AI result or a deterministic priority-sorted fallback.
+5. Never modifies pets or tasks; the owner reviews the proposal before acting.
+
+Set `OPENAI_API_KEY` to enable live AI planning. `OPENAI_MODEL` is optional and
+defaults to `gpt-4o-mini`. Without a key or when the provider fails, the app uses
+its local priority fallback.
+
+```powershell
+$env:OPENAI_API_KEY="your-key"
+$env:OPENAI_MODEL="gpt-4o-mini"
+streamlit run app.py
+```
+
 ## 📐 Smarter Scheduling
 
 | Feature | Method(s) | Notes |

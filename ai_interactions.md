@@ -10,15 +10,19 @@
 
 **What task did you give the agent?**
 
-<!-- Describe the goal you asked the agent to accomplish -->
+Implement the AI Schedule Coach described in the architecture diagram, including retrieval,
+AI planning, validation, deterministic fallback, Streamlit display, and tests.
 
 **What did the agent do?**
 
-<!-- List the steps the agent took (files edited, commands run, etc.) -->
+Created `AIScheduleCoach/ai_schedule_coach.py`, connected it to `app.py`, added mock-planner tests,
+and documented the `OPENAI_API_KEY` setup in `README.md`.
 
 **What did you have to verify or fix manually?**
 
-<!-- Describe anything the agent got wrong or that required human review -->
+Verified existing Streamlit button behavior and the 22 core/UI tests. Confirmed that
+AI plans cannot mutate tasks and that provider errors or invalid proposals use the
+deterministic fallback.
 
 ---
 
